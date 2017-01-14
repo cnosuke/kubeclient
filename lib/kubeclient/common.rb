@@ -4,7 +4,7 @@ module Kubeclient
   # Common methods
   # this is mixed in by other gems
   module ClientMixin
-    ENTITY_METHODS = %w(get watch delete create update patch).freeze
+    ENTITY_METHODS = %w(get watch delete create update patch rollback).freeze
 
     DEFAULT_SSL_OPTIONS = {
       client_cert: nil,
@@ -198,6 +198,10 @@ module Kubeclient
         define_singleton_method("patch_#{entity.method_names[0]}") do |name, patch, namespace = nil|
           patch_entity(entity.resource_name, name, patch, namespace)
         end
+
+        define_singleton_method("rollback_#{entity.method_names[0]}") do |name, entity_config = {}, namespace = nil|
+          rollback_entity(entity.resource_name, name, entity_config: entity_config, namespace: namespace)
+        end
       end
     end
 
@@ -255,6 +259,7 @@ module Kubeclient
       SEARCH_ARGUMENTS.each { |k, v| params[k] = options[v] if options[v] }
 
       ns_prefix = build_namespace_prefix(options[:namespace])
+
       response = handle_exception do
         rest_client[ns_prefix + resource_name]
           .get({ 'params' => params }.merge(@headers))
@@ -324,11 +329,31 @@ module Kubeclient
 
     def patch_entity(resource_name, name, patch, namespace = nil)
       ns_prefix = build_namespace_prefix(namespace)
+
       handle_exception do
         rest_client[ns_prefix + resource_name + "/#{name}"]
           .patch(
             patch.to_json,
             { 'Content-Type' => 'application/strategic-merge-patch+json' }.merge(@headers)
+          )
+      end
+    end
+
+    def rollback_entity(resource_name, name, entity_config: {}, namespace: nil)
+      ns_prefix = build_namespace_prefix(namespace)
+
+      hash = entity_config.to_hash
+      kind = resource_name.eql?('deployments') ? 'deployment' : resource_name
+      hash[:kind] = "#{kind.capitalize}Rollback"
+      hash[:apiVersion] = "extensions/v1beta1"
+      hash[:rollbackTo] ||= {}
+      hash[:name] ||= name
+
+      handle_exception do
+        rest_client[ns_prefix + resource_name + "/#{name}/rollback"]
+          .post(
+            hash.to_json,
+            { 'Content-Type' => 'application/json' }.merge(@headers)
           )
       end
     end
