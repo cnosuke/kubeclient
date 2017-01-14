@@ -4,13 +4,11 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'kubeclient/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'kubeclient'
+  spec.name          = 'kubeclient-rollback-dev'
   spec.version       = Kubeclient::VERSION
-  spec.authors       = ['Alissa Bonas']
-  spec.email         = ['abonas@redhat.com']
-  spec.summary       = 'A client for Kubernetes REST api'
-  spec.description   = 'A client for Kubernetes REST api'
-  spec.homepage      = 'https://github.com/abonas/kubeclient'
+  spec.authors       = ['cnosuke']
+  spec.email         = ['shinnosuke@gmail.com']
+  spec.summary       = 'WARNING: THIS GEM IS NOT PRODUCTION READY.'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0")
